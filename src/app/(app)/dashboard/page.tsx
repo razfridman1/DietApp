@@ -8,19 +8,23 @@ import { MealsList } from "@/components/dashboard/MealsList";
 import { ActivitiesList } from "@/components/dashboard/ActivitiesList";
 import { AddMealModal } from "@/components/modals/AddMealModal";
 import { AddActivityModal } from "@/components/modals/AddActivityModal";
+import { EditMealModal } from "@/components/modals/EditMealModal";
+import { EditActivityModal } from "@/components/modals/EditActivityModal";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/lib/client-api";
 import { fmtDate, todayISO } from "@/lib/format";
 import { T } from "@/lib/constants";
-import type { TodayPayload } from "@/types";
+import type { TodayPayload, Meal, Activity } from "@/types";
 
 export default function DashboardPage() {
   const qc = useQueryClient();
   const [mealOpen, setMealOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["today"],
@@ -72,8 +76,16 @@ export default function DashboardPage() {
               onAddActivity={() => setActOpen(true)}
               onClearDay={() => setConfirmClear(true)}
             />
-            <MealsList meals={data.meals} onDelete={deleteMeal} />
-            <ActivitiesList activities={data.activities} onDelete={deleteActivity} />
+            <MealsList
+              meals={data.meals}
+              onDelete={deleteMeal}
+              onEdit={(m) => setEditingMeal(m)}
+            />
+            <ActivitiesList
+              activities={data.activities}
+              onDelete={deleteActivity}
+              onEdit={(a) => setEditingActivity(a)}
+            />
           </>
         ) : null}
       </div>
@@ -91,6 +103,24 @@ export default function DashboardPage() {
         onClose={() => setActOpen(false)}
         onSaved={() => {
           setActOpen(false);
+          refresh();
+        }}
+      />
+      <EditMealModal
+        open={editingMeal !== null}
+        meal={editingMeal}
+        onClose={() => setEditingMeal(null)}
+        onSaved={() => {
+          setEditingMeal(null);
+          refresh();
+        }}
+      />
+      <EditActivityModal
+        open={editingActivity !== null}
+        activity={editingActivity}
+        onClose={() => setEditingActivity(null)}
+        onSaved={() => {
+          setEditingActivity(null);
           refresh();
         }}
       />

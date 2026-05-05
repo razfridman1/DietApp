@@ -1,5 +1,5 @@
 "use client";
-import { Trash2, Sparkles, Footprints, Dumbbell as Dumb, Bike, Waves, PersonStanding, Activity as ActivityIcon } from "lucide-react";
+import { Trash2, Sparkles, Footprints, Dumbbell as Dumb, Bike, Waves, PersonStanding, Activity as ActivityIcon, Pencil } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { fmtNum, fmtTime } from "@/lib/format";
 import { T } from "@/lib/constants";
@@ -18,9 +18,11 @@ const ICONS: Record<ActivityType, any> = {
 export function ActivitiesList({
   activities,
   onDelete,
+  onEdit,
 }: {
   activities: Activity[];
   onDelete: (id: string) => void;
+  onEdit: (activity: Activity) => void;
 }) {
   return (
     <Card>
@@ -55,13 +57,22 @@ export function ActivitiesList({
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => onDelete(a.id)}
-                  className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-danger dark:hover:bg-surface-800"
-                  aria-label={T.dash.delete}
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => onEdit(a)}
+                    className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-brand-600 dark:hover:bg-surface-800 dark:hover:text-brand-300"
+                    aria-label={T.dash.edit}
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => onDelete(a.id)}
+                    className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-danger dark:hover:bg-surface-800"
+                    aria-label={T.dash.delete}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
               </li>
             );
           })}

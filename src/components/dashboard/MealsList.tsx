@@ -1,5 +1,5 @@
 "use client";
-import { Trash2, Sparkles } from "lucide-react";
+import { Trash2, Sparkles, Pencil } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { fmtNum, fmtTime } from "@/lib/format";
 import { T } from "@/lib/constants";
@@ -8,9 +8,11 @@ import type { Meal } from "@/types";
 export function MealsList({
   meals,
   onDelete,
+  onEdit,
 }: {
   meals: Meal[];
   onDelete: (id: string) => void;
+  onEdit: (meal: Meal) => void;
 }) {
   return (
     <Card>
@@ -40,13 +42,22 @@ export function MealsList({
                   <span>· שומן {fmtNum(m.fats)} ג׳</span>
                 </div>
               </div>
-              <button
-                onClick={() => onDelete(m.id)}
-                className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-danger dark:hover:bg-surface-800"
-                aria-label={T.dash.delete}
-              >
-                <Trash2 className="size-4" />
-              </button>
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button
+                  onClick={() => onEdit(m)}
+                  className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-brand-600 dark:hover:bg-surface-800 dark:hover:text-brand-300"
+                  aria-label={T.dash.edit}
+                >
+                  <Pencil className="size-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(m.id)}
+                  className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-danger dark:hover:bg-surface-800"
+                  aria-label={T.dash.delete}
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>

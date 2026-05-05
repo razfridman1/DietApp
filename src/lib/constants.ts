@@ -44,6 +44,8 @@ export const T = {
     quickActions: "פעולות מהירות",
     addMeal: "הוספת מזון / שתייה",
     addActivity: "הוספת פעילות",
+    editMeal: "עריכת מזון",
+    editActivity: "עריכת פעילות",
     editDay: "עריכת יום",
     clearDay: "מחיקת נתוני היום",
     mealsLog: "יומן תזונה",
