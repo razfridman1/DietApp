@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default = LIGHT. Dark theme is opt-in via the `.dark` class on <html>. */
+:root {
+  --bg: #fafafa;
+  --bg-elev: #ffffff;
+  --text: #18181b;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --brand: #0ea5e9;
+}
+
+html.dark {
+  --bg: #09090b;
+  --bg-elev: #18181b;
+  --text: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --border: #27272a;
+  color-scheme: dark;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-feature-settings: "kern", "ss01";
+}
+
+body {
+  font-family: var(--font-heebo), system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-size: 11px;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+* { -webkit-tap-highlight-color: transparent; }
