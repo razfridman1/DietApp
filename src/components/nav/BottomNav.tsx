@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BarChart3, CalendarDays, Brain, Target } from "lucide-react";
+import { Home, BarChart3, CalendarDays, Brain, Target, ChefHat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { T } from "@/lib/constants";
 
@@ -11,6 +11,7 @@ const items = [
   { href: "/monthly", label: T.nav.monthly, icon: CalendarDays },
   { href: "/insights", label: T.nav.insights, icon: Brain },
   { href: "/goal", label: T.nav.goal, icon: Target },
+  { href: "/meal-ideas", label: T.nav.mealIdeas, icon: ChefHat },
 ] as const;
 
 export function BottomNav() {
@@ -20,7 +21,7 @@ export function BottomNav() {
       dir="rtl"
       className="fixed bottom-0 inset-x-0 z-40 border-t border-surface-200 bg-white/90 backdrop-blur dark:bg-surface-900/90 dark:border-surface-800"
     >
-      <ul className="mx-auto grid max-w-2xl grid-cols-5">
+      <ul className="mx-auto grid max-w-2xl grid-cols-6">
         {items.map((it) => {
           const active = pathname === it.href || pathname?.startsWith(it.href + "/");
           const Icon = it.icon;
