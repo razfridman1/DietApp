@@ -172,6 +172,15 @@ export const T = {
     weightToday: "משקל נוכחי היום",
     addWeight: "הוספת מדידה",
   },
+  // Day detail (drill-down from weekly/monthly chart)
+  dayDetail: {
+    title: "פירוט יום",
+    back: "חזרה",
+    noData: "לא נרשמו נתונים ביום זה",
+    summary: "סיכום היום",
+    hadActivity: "כללה פעילות גופנית",
+    noActivity: "ללא פעילות גופנית",
+  },
   // AI Meal Ideas tab
   mealIdeas: {
     title: "רעיונות לארוחות",

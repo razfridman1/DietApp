@@ -1,5 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/nav/TopBar";
 import { Card, CardHeader, CardTitle, CardSubtle } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
@@ -9,7 +10,7 @@ import { api } from "@/lib/client-api";
 import { fmtKcal, fmtNum, fmtShortDay } from "@/lib/format";
 import { T } from "@/lib/constants";
 import type { DailyLog, TodayPayload } from "@/types";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Dumbbell } from "lucide-react";
 
 interface WeeklyResp {
   days: DailyLog[];
@@ -18,6 +19,8 @@ interface WeeklyResp {
 }
 
 export default function WeeklyPage() {
+  const router = useRouter();
+
   const today = useQuery({
     queryKey: ["today"],
     queryFn: () => api.get<TodayPayload>("/api/daily/today"),
@@ -30,18 +33,26 @@ export default function WeeklyPage() {
   const tdee = today.data?.tdee ?? 0;
   const proteinTarget = today.data?.proteinTarget ?? 0;
 
-  const calories = (weekly.data?.days ?? []).map((d) => ({
+  const days = weekly.data?.days ?? [];
+  const calories = days.map((d) => ({
     date: d.log_date,
     value: Number(d.calories_in),
+    hasActivity: Number(d.calories_out) > 0,
   }));
-  const protein = (weekly.data?.days ?? []).map((d) => ({
+  const protein = days.map((d) => ({
     date: d.log_date,
     value: Number(d.protein_total),
+    hasActivity: Number(d.calories_out) > 0,
   }));
-  const net = (weekly.data?.days ?? []).map((d) => ({
+  const net = days.map((d) => ({
     date: d.log_date,
     value: Number(d.net_calories),
   }));
+
+  const openDay = (date?: string) => {
+    if (!date) return;
+    router.push(`/day/${date}`);
+  };
 
   return (
     <>
@@ -54,7 +65,18 @@ export default function WeeklyPage() {
             <CardTitle>{T.analytics.avgCalories}</CardTitle>
             <CardSubtle>{fmtKcal(weekly.data?.summary.avgCalIn ?? 0)}</CardSubtle>
           </CardHeader>
-          <BarSeries data={calories} reference={tdee} unit={T.dash.kcal} colorVar="#0ea5e9" />
+          <BarSeries
+            data={calories}
+            reference={tdee}
+            unit={T.dash.kcal}
+            colorVar="#0ea5e9"
+            onBarClick={openDay}
+          />
+          <p className="mt-2 flex items-center gap-1.5 text-[11px] text-surface-500 dark:text-surface-300">
+            <span className="inline-block size-2 rounded-full bg-success" />
+            <Dumbbell className="size-3" />
+            {T.dayDetail.hadActivity}
+          </p>
         </Card>
 
         <Card>
@@ -62,7 +84,13 @@ export default function WeeklyPage() {
             <CardTitle>{T.analytics.avgProtein}</CardTitle>
             <CardSubtle>{fmtNum(weekly.data?.summary.avgProtein ?? 0)} ג׳</CardSubtle>
           </CardHeader>
-          <BarSeries data={protein} reference={proteinTarget} unit="ג׳" colorVar="#10b981" />
+          <BarSeries
+            data={protein}
+            reference={proteinTarget}
+            unit="ג׳"
+            colorVar="#10b981"
+            onBarClick={openDay}
+          />
         </Card>
 
         <Card>
@@ -84,7 +112,8 @@ export default function WeeklyPage() {
               {weekly.data!.anomalies.map((d) => (
                 <li
                   key={d}
-                  className="flex items-center gap-2 rounded-lg border border-warn/30 bg-warn/5 p-3 text-sm"
+                  onClick={() => openDay(d)}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-warn/30 bg-warn/5 p-3 text-sm hover:bg-warn/10"
                 >
                   <AlertTriangle className="size-4 text-warn shrink-0" />
                   <span>{fmtShortDay(d)}</span>

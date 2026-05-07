@@ -1,5 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { Dumbbell } from "lucide-react";
 import { TopBar } from "@/components/nav/TopBar";
 import { Card, CardHeader, CardTitle, CardSubtle } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
@@ -19,6 +21,8 @@ interface MonthlyResp {
 }
 
 export default function MonthlyPage() {
+  const router = useRouter();
+
   const today = useQuery({
     queryKey: ["today"],
     queryFn: () => api.get<TodayPayload>("/api/daily/today"),
@@ -29,13 +33,16 @@ export default function MonthlyPage() {
   });
 
   const tdee = today.data?.tdee ?? 0;
-  const calories = (monthly.data?.days ?? []).map((d) => ({
+  const days = monthly.data?.days ?? [];
+  const calories = days.map((d) => ({
     date: d.log_date,
     value: Number(d.calories_in),
+    hasActivity: Number(d.calories_out) > 0,
   }));
-  const protein = (monthly.data?.days ?? []).map((d) => ({
+  const protein = days.map((d) => ({
     date: d.log_date,
     value: Number(d.protein_total),
+    hasActivity: Number(d.calories_out) > 0,
   }));
   const weights = (monthly.data?.weights ?? []).map((w) => ({
     date: w.log_date,
@@ -43,6 +50,11 @@ export default function MonthlyPage() {
   }));
 
   const consistencyPct = Math.round((monthly.data?.consistency ?? 0) * 100);
+
+  const openDay = (date?: string) => {
+    if (!date) return;
+    router.push(`/day/${date}`);
+  };
 
   return (
     <>
@@ -73,7 +85,18 @@ export default function MonthlyPage() {
             <CardTitle>{T.analytics.avgCalories}</CardTitle>
             <CardSubtle>{fmtKcal(monthly.data?.summary.avgCalIn ?? 0)}</CardSubtle>
           </CardHeader>
-          <BarSeries data={calories} reference={tdee} unit={T.dash.kcal} colorVar="#0ea5e9" />
+          <BarSeries
+            data={calories}
+            reference={tdee}
+            unit={T.dash.kcal}
+            colorVar="#0ea5e9"
+            onBarClick={openDay}
+          />
+          <p className="mt-2 flex items-center gap-1.5 text-[11px] text-surface-500 dark:text-surface-300">
+            <span className="inline-block size-2 rounded-full bg-success" />
+            <Dumbbell className="size-3" />
+            {T.dayDetail.hadActivity}
+          </p>
         </Card>
 
         <Card>
@@ -81,7 +104,12 @@ export default function MonthlyPage() {
             <CardTitle>{T.analytics.avgProtein}</CardTitle>
             <CardSubtle>{fmtNum(monthly.data?.summary.avgProtein ?? 0)} ג׳</CardSubtle>
           </CardHeader>
-          <BarSeries data={protein} unit="ג׳" colorVar="#10b981" />
+          <BarSeries
+            data={protein}
+            unit="ג׳"
+            colorVar="#10b981"
+            onBarClick={openDay}
+          />
         </Card>
 
         <Card>
