@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: COLORS.inkSoft,
     textAlign: "right",
-    fontStyle: "italic",
+
   },
   footer: {
     position: "absolute",
