@@ -1,11 +1,13 @@
-Place Hebrew Heebo TTF files here for fully offline PDF generation:
+Place Hebrew Heebo TTF files here for offline-safe PDF generation:
 
   public/fonts/heebo/Heebo-Regular.ttf
   public/fonts/heebo/Heebo-Bold.ttf
 
-Source (Open Font License):
-  https://github.com/google/fonts/tree/main/ofl/heebo/static
+Reliable download (CDN-mirrored npm package):
+  https://cdn.jsdelivr.net/npm/@expo-google-fonts/heebo/Heebo_400Regular.ttf
+  https://cdn.jsdelivr.net/npm/@expo-google-fonts/heebo/Heebo_700Bold.ttf
 
-If the files are absent, the PDF generator falls back to fetching Heebo
-from a public URL at runtime (configurable via REPORT_FONT_REGULAR_URL /
-REPORT_FONT_BOLD_URL env vars).
+Validation: each file should be ~50-90 KB and start with bytes
+00 01 00 00 (TrueType magic). If the first bytes are `<!DOCTYPE` or
+`0a 0a 0a` your download was redirected to an HTML error page; try
+again with -L (follow redirects) and a fresh URL.
