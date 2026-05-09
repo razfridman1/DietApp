@@ -6,6 +6,7 @@ import { HeroCards } from "@/components/dashboard/HeroCards";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { MealsList } from "@/components/dashboard/MealsList";
 import { ActivitiesList } from "@/components/dashboard/ActivitiesList";
+import { AIWhatsMissing } from "@/components/dashboard/AIWhatsMissing";
 import { AddMealModal } from "@/components/modals/AddMealModal";
 import { AddActivityModal } from "@/components/modals/AddActivityModal";
 import { EditMealModal } from "@/components/modals/EditMealModal";
@@ -76,6 +77,7 @@ export default function DashboardPage() {
               onAddActivity={() => setActOpen(true)}
               onClearDay={() => setConfirmClear(true)}
             />
+            <AIWhatsMissing />
             <MealsList
               meals={data.meals}
               onDelete={deleteMeal}
