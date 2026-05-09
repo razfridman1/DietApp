@@ -7,6 +7,37 @@ import { calorieDelta } from "@/lib/constants";
 import { whatsMissing } from "@/lib/ai/dashboardTip";
 import type { Profile, DailyLog, Meal } from "@/types";
 
+/**
+ * GET — return today's cached tip if one exists, or null.
+ *       Never calls the AI.
+ */
+export async function GET() {
+  let session;
+  try {
+    session = await requireUser();
+  } catch (r) {
+    return r as Response;
+  }
+  const { user, supabase } = session;
+  const date = todayISO();
+
+  const { data } = await supabase
+    .from("dashboard_tip_cache")
+    .select("payload, updated_at")
+    .eq("user_id", user.id)
+    .eq("log_date", date)
+    .maybeSingle();
+
+  return json({
+    payload: data?.payload ?? null,
+    cachedAt: data?.updated_at ?? null,
+  });
+}
+
+/**
+ * POST — always run the AI fresh, then upsert into the cache.
+ *        Used when the user clicks "ניתוח" / "רענון".
+ */
 export async function POST(_req: Request) {
   let session;
   try {
@@ -35,7 +66,6 @@ export async function POST(_req: Request) {
 
   const profile = profileRow as Profile | null;
   const log = logData as DailyLog | null;
-
   if (!profile) return err("profile_not_found", 404);
 
   const userTdee = tdee(profile);
@@ -44,7 +74,7 @@ export async function POST(_req: Request) {
   const goalCalories = userTdee + goalDelta;
 
   try {
-    const result = await whatsMissing({
+    const payload = await whatsMissing({
       caloriesIn: Number(log?.calories_in ?? 0),
       caloriesOut: Number(log?.calories_out ?? 0),
       proteinIn: Number(log?.protein_total ?? 0),
@@ -59,7 +89,21 @@ export async function POST(_req: Request) {
       })),
       goal: profile.goal,
     });
-    return json(result);
+
+    // Upsert cache for today.  Each subsequent POST overwrites the row.
+    await supabase
+      .from("dashboard_tip_cache")
+      .upsert(
+        {
+          user_id: user.id,
+          log_date: date,
+          payload,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,log_date" },
+      );
+
+    return json({ payload, cached: false });
   } catch (e: any) {
     return err("ai_dashboard_tip_failed: " + (e?.message || "unknown"), 502);
   }

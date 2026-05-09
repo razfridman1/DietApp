@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Sparkles, RefreshCw, Clock, Flame, Beef, X, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Sparkles,
+  RefreshCw,
+  Clock,
+  Flame,
+  Beef,
+  X,
+  Check,
+} from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/client-api";
@@ -24,13 +32,33 @@ interface TipResult {
 }
 
 export function AIWhatsMissing() {
-  const [open, setOpen] = useState(false);
-  const tip = useMutation({
-    mutationFn: () => api.post<TipResult>("/api/ai/dashboard-tip"),
-    onSuccess: () => setOpen(true),
+  const qc = useQueryClient();
+
+  // Auto-load whatever was cached for today (no AI call here).
+  const cached = useQuery({
+    queryKey: ["dashboard-tip"],
+    queryFn: () =>
+      api.get<{ payload: TipResult | null; cachedAt: string | null }>(
+        "/api/ai/dashboard-tip",
+      ),
   });
 
-  const result = tip.data;
+  // Force-fresh AI run.  Cache is upserted server-side.
+  const refresh = useMutation({
+    mutationFn: () => api.post<{ payload: TipResult; cached: boolean }>("/api/ai/dashboard-tip"),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dashboard-tip"] });
+    },
+  });
+
+  const result: TipResult | null =
+    refresh.data?.payload ?? cached.data?.payload ?? null;
+
+  // Auto-expand whenever a result first appears.
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    if (result) setOpen(true);
+  }, [result?.gaps?.length, result?.suggestions?.length]);
 
   return (
     <Card
@@ -49,18 +77,18 @@ export function AIWhatsMissing() {
         </div>
         <Button
           size="sm"
-          onClick={() => tip.mutate()}
-          loading={tip.isPending}
-          disabled={tip.isPending}
+          onClick={() => refresh.mutate()}
+          loading={refresh.isPending}
+          disabled={refresh.isPending}
         >
           {result ? <RefreshCw className="size-4" /> : <Sparkles className="size-4" />}
-          {tip.isPending ? "מנתח..." : result ? "רענון" : "ניתוח"}
+          {refresh.isPending ? "מנתח..." : result ? "רענון" : "ניתוח"}
         </Button>
       </div>
 
-      {tip.error ? (
+      {refresh.error ? (
         <p className="mt-2 text-xs text-danger">
-          {(tip.error as Error)?.message || "שגיאה בניתוח. נסה/י שוב."}
+          {(refresh.error as Error)?.message || "שגיאה בניתוח. נסה/י שוב."}
         </p>
       ) : null}
 
