@@ -212,7 +212,7 @@ export default function GoalPage() {
             <CardTitle>נתוני יעד</CardTitle>
           </CardHeader>
           <div className="grid grid-cols-2 gap-3">
-            <Stat label="TDEE" value={fmtKcal(tdee)} hint="הוצאה יומית" />
+            <Stat label="צריכת קלוריות יומית" value={fmtKcal(tdee)} hint="הוצאה יומית" />
             <Stat
               label={T.dash.todayTarget}
               value={fmtKcal(goalCalorieTarget)}

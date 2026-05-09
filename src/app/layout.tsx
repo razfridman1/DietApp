@@ -13,6 +13,15 @@ export const metadata: Metadata = {
   title: "תזונה וכושר AI",
   description: "מעקב חכם של קלוריות, חלבון, פעילות גופנית ויעדי גוף",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -22,7 +31,6 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-// Runs before React hydrates. Default = light. Dark only if user opted in.
 const themeInitScript = `
 (function() {
   try {

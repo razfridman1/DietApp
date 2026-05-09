@@ -38,7 +38,7 @@ export function HeroCards({ data }: { data: TodayPayload }) {
             <span>
               {T.dash.todayTarget}: {fmtKcal(goalCalorieTarget)}
             </span>
-            <span>TDEE: {fmtKcal(tdee)}</span>
+            <span>צריכת קלוריות יומית: {fmtKcal(tdee)}</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -78,7 +78,7 @@ export function HeroCards({ data }: { data: TodayPayload }) {
             hint={
               remainingToTdee >= 0
                 ? `${T.dash.remaining} מתוך ${fmtNum(tdee)}`
-                : `${T.dash.over} מ־TDEE`
+                : `${T.dash.over} מצריכת קלוריות יומית`
             }
           />
         </div>
@@ -121,7 +121,7 @@ export function HeroCards({ data }: { data: TodayPayload }) {
                 {fmtKg(weightForecastKg, 2)}
               </span>
             }
-            hint={`לפי ${fmtKcal(tdee)} TDEE`}
+            hint={`לפי צריכת קלוריות יומית של ${fmtKcal(tdee)}`}
           />
           <Stat
             label="לפי השבוע"
