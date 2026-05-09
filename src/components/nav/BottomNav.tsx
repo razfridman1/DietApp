@@ -3,9 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home,
-  BarChart3,
-  CalendarDays,
-  Brain,
+  TrendingUp,
   Target,
   ChefHat,
   FileText,
@@ -27,9 +25,7 @@ export function BottomNav() {
 
   const enLabels = {
     today: "Today",
-    weekly: "Weekly",
-    monthly: "Monthly",
-    insights: "Insights",
+    analytics: "Analytics",
     goal: "Goal",
     mealIdeas: "Meals",
     reports: "Reports",
@@ -38,9 +34,7 @@ export function BottomNav() {
   const items: NavItem[] = [
     { href: "/dashboard", label: lang === "he" ? T.nav.today : enLabels.today, icon: Home },
     { href: "/health", label: t.health, icon: HeartPulse },
-    { href: "/weekly", label: lang === "he" ? T.nav.weekly : enLabels.weekly, icon: BarChart3 },
-    { href: "/monthly", label: lang === "he" ? T.nav.monthly : enLabels.monthly, icon: CalendarDays },
-    { href: "/insights", label: lang === "he" ? T.nav.insights : enLabels.insights, icon: Brain },
+    { href: "/analytics", label: lang === "he" ? T.nav.analytics : enLabels.analytics, icon: TrendingUp },
     { href: "/goal", label: lang === "he" ? T.nav.goal : enLabels.goal, icon: Target },
     { href: "/meal-ideas", label: lang === "he" ? T.nav.mealIdeas : enLabels.mealIdeas, icon: ChefHat },
     { href: "/reports", label: lang === "he" ? T.nav.reports : enLabels.reports, icon: FileText },
@@ -51,22 +45,32 @@ export function BottomNav() {
       dir={isRTL ? "rtl" : "ltr"}
       className="fixed bottom-0 inset-x-0 z-40 border-t border-surface-200 bg-white/90 backdrop-blur dark:bg-surface-900/90 dark:border-surface-800"
     >
-      <ul className="mx-auto flex max-w-2xl overflow-x-auto sm:grid sm:grid-cols-8 sm:overflow-visible">
+      <ul className="mx-auto grid max-w-2xl grid-cols-6">
         {items.map((it) => {
           const active = pathname === it.href || pathname?.startsWith(it.href + "/");
+          // Treat the legacy /weekly /monthly /insights routes as part of /analytics so the nav highlights correctly.
+          const legacyActive =
+            it.href === "/analytics" &&
+            (pathname === "/weekly" ||
+              pathname === "/monthly" ||
+              pathname === "/insights" ||
+              pathname?.startsWith("/weekly/") ||
+              pathname?.startsWith("/monthly/") ||
+              pathname?.startsWith("/insights/"));
+          const isActive = active || legacyActive;
           const Icon = it.icon;
           return (
-            <li key={it.href} className="min-w-[64px] shrink-0 sm:min-w-0">
+            <li key={it.href}>
               <Link
                 href={it.href}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] leading-tight",
-                  active
+                  isActive
                     ? "text-brand-600 dark:text-brand-400"
                     : "text-surface-500 dark:text-surface-300",
                 )}
               >
-                <Icon className={cn("size-5", active && "stroke-[2.4]")} />
+                <Icon className={cn("size-5", isActive && "stroke-[2.4]")} />
                 <span className="truncate">{it.label}</span>
               </Link>
             </li>

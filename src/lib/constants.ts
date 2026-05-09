@@ -7,6 +7,7 @@ export const T = {
     weekly: "שבועי",
     monthly: "חודשי",
     insights: "אנליטיקה",
+    analytics: "ניתוח",
     goal: "יעד",
     mealIdeas: "רעיונות",
     reports: "דו״חות",
@@ -185,7 +186,7 @@ export const T = {
   // AI Meal Ideas tab
   mealIdeas: {
     title: "רעיונות לארוחות",
-    subtitle: "קבל/י 10 רעיונות מותאמים מ-AI שכולם מתחת למגבלת הקלוריות שלך",
+    subtitle: "10 רעיונות יומיומיים פשוטים, ממה שיש בבית, מתחת למגבלת הקלוריות שלך",
     limitLabel: "מגבלת קלוריות מקסימלית למנה",
     limitPlaceholder: "למשל 500",
     generate: "הצע/י רעיונות",
@@ -196,6 +197,14 @@ export const T = {
     ingredients: "מרכיבים עיקריים",
     regenerate: "רענון",
     invalidLimit: "אנא הזן/י מגבלת קלוריות תקינה",
+    prepTime: "זמן הכנה",
+    minutesShort: "דק׳",
+    history: "היסטוריית הצעות",
+    historyEmpty: "אין הצעות שמורות עדיין",
+    historyShow: "הצג הצעות אלה",
+    historyDelete: "מחיקה",
+    historyClearAll: "ניקוי הכל",
+    historyConfirmClear: "למחוק את כל ההיסטוריה?",
   },
   errors: {
     generic: "שגיאה. נסה/י שוב",
