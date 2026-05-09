@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { CLAUDE_MODEL, claude, extractJson } from "./claude";
+import { CLAUDE_MODEL, claude } from "./claude";
 
 export interface QuickSuggestion {
   name: string;
@@ -8,7 +8,7 @@ export interface QuickSuggestion {
   protein: number;
   ingredients: string[];
   prepTime: number; // minutes
-  fills: string;   // what gap this fills
+  fills: string;
 }
 
 export interface DashboardTipResult {
@@ -30,36 +30,60 @@ export interface DashboardTipInput {
 
 const SYSTEM = `אתה תזונאי שעוזר למשתמש להגיע ליום מצוין.
 המשתמש שלח לך מה אכל היום, מה היעד שלו, וכמה אנרגיה הוא שרף באימון.
-תזהה מה חסר לו (חלבון/ירקות/פירות/סיבים/מים/שומן בריא/קלוריות) כדי להגיע לציון מצוין,
-ותציע 2-4 ארוחות / נשנושים זריזים מאוד שיכולים להשלים את החסר.
+זהה מה חסר לו (חלבון/ירקות/פירות/סיבים/מים/שומן בריא/קלוריות) כדי להגיע לציון מצוין,
+והצע 2-4 ארוחות / נשנושים זריזים מאוד שיכולים להשלים את החסר.
 
-חוקים נוקשים:
-- JSON בלבד. בלי טקסט מסביב, בלי markdown.
-- חשוב מאוד: בתוך כל ערך מחרוזת בעברית, השתמש אך ורק בגרשיים עבריים ״ (U+05F4). אל תשתמש בגרש כפול " בשום מקום מלבד תוחמי המחרוזת של JSON. למשל: ״קק״ל״, ״גבינה לבנה 5%״, ״קוטג׳״.
-- אל תכלול פסיק אחרון (trailing comma) באף מערך או אובייקט.
-- "gaps": 2-4 תיאורים קצרים בעברית של מה חסר. למשל ״חסרים כ-30 גרם חלבון״, ״אין ירקות בכלל״.
-- "suggestions": 2-4 הצעות פשוטות.
+חוקים:
 - כל הצעה: 5-15 דקות הכנה, 4-7 מצרכים שיש בכל מטבח רגיל.
 - אסור: אורז לבן, לחם לבן, פסטה לבנה, סוכר מוסף, נקניקיות, סלמי, מטוגנים, חטיפי במבה/דוריטוס, סופגניות, בורקס, מיונז, קטשופ, ופלים, סוכריות, קולה, אלכוהול, נודלס אינסטנט, פיצה קפואה.
 - מצרכים מומלצים: ביצים, גבינה לבנה 5%, קוטג׳, יוגורט יווני 0%, חזה עוף, טונה במים, אבוקדו, חמאת בוטנים טבעית, שיבולת שועל, לחם מחיטה מלאה, טחינה גולמית, ירקות, פירות, אגוזים, שקדים, סלמון.
-- "fills": משפט קצר שמסביר איזה חסר הסעיף מכסה. למשל ״מוסיף 25 גרם חלבון״ או ״ירקות + סיבים״.
-- prepTime: מספר שלם בדקות.
+- gaps: 2-4 פריטים, כל אחד משפט קצר.
+- fills: משפט קצר על איזה חסר ההצעה מכסה.
+- כל הטקסט בעברית טבעית.`;
 
-צורת היציאה:
-{
-  "gaps": ["..."],
-  "suggestions": [
-    {
-      "name": "<שם>",
-      "description": "<משפט קצר>",
-      "calories": <int>,
-      "protein": <int>,
-      "ingredients": ["<מצרך 1>", "..."],
-      "prepTime": <int דקות>,
-      "fills": "<מה זה משלים>"
-    }
-  ]
-}`;
+// Tool-use schema — Anthropic enforces that the model returns a valid object
+// matching this exact shape, so we never need to parse free-form JSON.
+const TOOL_SCHEMA: Anthropic.Tool = {
+  name: "report_missing",
+  description: "Report nutritional gaps for today and propose quick meals to fill them.",
+  input_schema: {
+    type: "object",
+    properties: {
+      gaps: {
+        type: "array",
+        items: { type: "string" },
+        description: "Short Hebrew descriptions of what is missing in today's intake.",
+      },
+      suggestions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Hebrew meal name, max 6 words." },
+            description: { type: "string", description: "One short Hebrew sentence." },
+            calories: { type: "integer", description: "Estimated kcal." },
+            protein: { type: "integer", description: "Grams of protein." },
+            ingredients: {
+              type: "array",
+              items: { type: "string" },
+              description: "4-7 Hebrew ingredient names from a normal pantry.",
+            },
+            prepTime: {
+              type: "integer",
+              description: "Prep + cook time in minutes (5-15).",
+            },
+            fills: {
+              type: "string",
+              description: "What gap this meal fills, in Hebrew.",
+            },
+          },
+          required: ["name", "calories", "protein", "ingredients", "prepTime", "fills"],
+        },
+      },
+    },
+    required: ["gaps", "suggestions"],
+  } as any,
+};
 
 const BANNED = new RegExp(
   [
@@ -81,10 +105,15 @@ export async function whatsMissing(input: DashboardTipInput): Promise<DashboardT
   const c = claude();
 
   const proteinGap = Math.max(0, Math.round(input.proteinTarget - input.proteinIn));
-  const calorieGap = Math.max(0, Math.round(input.goalCalories + input.caloriesOut - input.caloriesIn));
+  const calorieGap = Math.max(
+    0,
+    Math.round(input.goalCalories + input.caloriesOut - input.caloriesIn),
+  );
 
   const mealsList = input.meals.length
-    ? input.meals.map((m) => `${m.name} (${Math.round(m.calories)} kcal, ${Math.round(m.protein)}g חלבון)`).join("; ")
+    ? input.meals
+        .map((m) => `${m.name} (~${Math.round(m.calories)} kcal, ${Math.round(m.protein)}g protein)`)
+        .join("; ")
     : "טרם נרשמו ארוחות";
 
   const userMsg = `יעד יומי: ${input.goalCalories} קק"ל, ${input.proteinTarget} גרם חלבון. יעד: ${input.goal}.
@@ -94,27 +123,36 @@ export async function whatsMissing(input: DashboardTipInput): Promise<DashboardT
 
 חסר חלבון: ~${proteinGap} גרם. חסרים קלוריות: ~${calorieGap} קק"ל (לפי הפעילות).
 
-נתח מה חסר וענה ב-JSON.`;
+נתח מה חסר וקרא לכלי report_missing.`;
 
   const res = await c.messages.create({
     model: CLAUDE_MODEL,
-    max_tokens: 900,
+    max_tokens: 1500,
     system: SYSTEM,
+    tools: [TOOL_SCHEMA],
+    tool_choice: { type: "tool", name: "report_missing" },
     messages: [{ role: "user", content: userMsg }],
   });
 
-  const text = res.content
-    .filter((b: any): b is Anthropic.TextBlock => b.type === "text")
-    .map((b: any) => b.text)
-    .join("\n");
+  // Locate the tool_use block (Anthropic guarantees valid input matching the schema).
+  const toolBlock = res.content.find(
+    (b: any): b is Anthropic.ToolUseBlock => b.type === "tool_use",
+  );
 
-  const parsed = extractJson<any>(text);
+  if (!toolBlock || typeof toolBlock.input !== "object" || toolBlock.input === null) {
+    throw new Error("ai_no_tool_use");
+  }
 
-  const gaps: string[] = Array.isArray(parsed?.gaps)
-    ? parsed.gaps.map((s: any) => String(s).slice(0, 240)).filter(Boolean).slice(0, 6)
+  const data = toolBlock.input as {
+    gaps?: unknown;
+    suggestions?: unknown;
+  };
+
+  const gaps: string[] = Array.isArray(data.gaps)
+    ? data.gaps.map((s: any) => String(s).slice(0, 240)).filter(Boolean).slice(0, 6)
     : [];
 
-  const rawSuggestions = Array.isArray(parsed?.suggestions) ? parsed.suggestions : [];
+  const rawSuggestions: any[] = Array.isArray(data.suggestions) ? data.suggestions : [];
   const suggestions: QuickSuggestion[] = rawSuggestions
     .map((s: any) => ({
       name: String(s?.name ?? "").slice(0, 80),
@@ -130,7 +168,7 @@ export async function whatsMissing(input: DashboardTipInput): Promise<DashboardT
           : 5,
       fills: String(s?.fills ?? "").slice(0, 200),
     }))
-    .filter((s: QuickSuggestion) => s.name && !dropBanned(s))
+    .filter((s) => s.name && !dropBanned(s))
     .slice(0, 4);
 
   return { gaps, suggestions };
