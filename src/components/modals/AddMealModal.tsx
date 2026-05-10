@@ -1,11 +1,13 @@
 "use client";
-import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
+import { Camera, Mic, Sparkles, Square, X } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { api } from "@/lib/client-api";
 import { T } from "@/lib/constants";
+import { useVoiceInput } from "@/lib/hooks/useVoiceInput";
+import { compressImageFile, type CompressedImage } from "@/lib/image";
 import type { ParsedMeal } from "@/lib/ai/parseMeal";
 
 interface Props {
@@ -30,7 +32,84 @@ export function AddMealModal({ open, onClose, onSaved }: Props) {
   const [fats, setFats] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
+  // Voice dictation — Hebrew (he-IL). Falls back gracefully if the browser
+  // doesn't support the Web Speech API (button is hidden in that case).
+  const voice = useVoiceInput({ lang: "he-IL", continuous: true, interimResults: true });
+
+  // Photo analysis — user picks (or shoots) an image, we compress it client-side
+  // and send to the vision endpoint which fills in name + macros.
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [image, setImage] = useState<CompressedImage | null>(null);
+  const [analyzingImage, setAnalyzingImage] = useState(false);
+
+  function openPhotoPicker() {
+    fileInputRef.current?.click();
+  }
+
+  function clearImage() {
+    setImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function onPhotoChange(ev: React.ChangeEvent<HTMLInputElement>) {
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    if (voice.isListening) voice.stop();
+
+    let compressed: CompressedImage;
+    try {
+      compressed = await compressImageFile(file, { maxEdge: 1280, quality: 0.85 });
+    } catch {
+      setError(T.ai.photoError);
+      return;
+    }
+    setImage(compressed);
+
+    // Auto-analyze right away so the user doesn't have to press another button.
+    setAnalyzingImage(true);
+    try {
+      const gramsHint = grams ? Number(grams) : undefined;
+      const r = await api.post<ParsedMeal>("/api/ai/parse-meal-image", {
+        imageBase64: compressed.base64,
+        mediaType: compressed.mediaType,
+        grams: gramsHint && gramsHint > 0 ? gramsHint : undefined,
+        text: text.trim() || undefined,
+      });
+      setParsed(r);
+      setBaseline(r);
+      setName(r.name);
+      setGrams(r.grams != null ? String(r.grams) : gramsHint ? String(gramsHint) : "");
+      setCalories(String(r.calories));
+      setProtein(String(r.protein));
+      setCarbs(String(r.carbs));
+      setFats(String(r.fats));
+    } catch (e: any) {
+      setError(e?.message || T.ai.photoError);
+    } finally {
+      setAnalyzingImage(false);
+    }
+  }
+
+  /** Toggle voice recording. When stopping, the finalized transcript is
+   *  appended to whatever the user has already typed in the textarea. */
+  function toggleVoice() {
+    setError(null);
+    if (voice.isListening) {
+      voice.stop();
+      return;
+    }
+    voice.start({
+      onFinal: (finalText) => {
+        if (!finalText) return;
+        setText((prev) => (prev ? prev.trimEnd() + " " + finalText : finalText));
+      },
+    });
+  }
+
   function reset() {
+    if (voice.isListening) voice.stop();
+    voice.reset();
     setText("");
     setParsed(null);
     setBaseline(null);
@@ -41,9 +120,23 @@ export function AddMealModal({ open, onClose, onSaved }: Props) {
     setCarbs("");
     setFats("");
     setError(null);
+    setImage(null);
+    setAnalyzingImage(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  /** Map Web Speech API error codes to a friendly Hebrew message. */
+  function voiceErrorMessage(code: string | null): string | null {
+    if (!code) return null;
+    if (code === "not-allowed" || code === "service-not-allowed") {
+      return T.ai.voicePermissionDenied;
+    }
+    if (code === "unsupported") return T.ai.voiceUnsupported;
+    return T.ai.voiceError;
   }
 
   async function aiParse() {
+    if (voice.isListening) voice.stop();
     if (text.trim().length < 2) return;
     setParsing(true);
     setError(null);
@@ -127,12 +220,90 @@ export function AddMealModal({ open, onClose, onSaved }: Props) {
         <div className="space-y-3">
           <div>
             <Label htmlFor="meal-text">{T.ai.parseMealHint}</Label>
-            <Textarea
-              id="meal-text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder='לדוגמה: "סלט יווני גדול עם פיתה ושני שיפודי עוף"'
+            <div className="relative">
+              <Textarea
+                id="meal-text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder='לדוגמה: "סלט יווני גדול עם פיתה ושני שיפודי עוף"'
+                className={voice.isSupported ? "pe-24" : "pe-14"}
+              />
+              <div className="absolute bottom-2 end-2 flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={openPhotoPicker}
+                  disabled={analyzingImage}
+                  aria-label={T.ai.photoCapture}
+                  title={T.ai.photoCapture}
+                  className={
+                    "inline-flex size-9 items-center justify-center rounded-full " +
+                    "transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/40 " +
+                    "disabled:opacity-50 disabled:cursor-not-allowed " +
+                    "bg-surface-100 text-surface-700 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-100 dark:hover:bg-surface-900"
+                  }
+                >
+                  <Camera className="size-4" />
+                </button>
+                {voice.isSupported ? (
+                  <button
+                    type="button"
+                    onClick={toggleVoice}
+                    aria-label={voice.isListening ? T.ai.voiceStop : T.ai.voiceStart}
+                    title={voice.isListening ? T.ai.voiceStop : T.ai.voiceStart}
+                    className={
+                      "inline-flex size-9 items-center justify-center rounded-full " +
+                      "transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/40 " +
+                      (voice.isListening
+                        ? "bg-danger text-white animate-pulse"
+                        : "bg-surface-100 text-surface-700 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-100 dark:hover:bg-surface-900")
+                    }
+                  >
+                    {voice.isListening ? <Square className="size-4" /> : <Mic className="size-4" />}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={onPhotoChange}
             />
+            {image ? (
+              <div className="mt-2 relative inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={image.dataUrl}
+                  alt="meal preview"
+                  className="max-h-40 rounded-xl border border-surface-200 dark:border-surface-800"
+                />
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  aria-label={T.ai.photoRemove}
+                  title={T.ai.photoRemove}
+                  className="absolute -top-2 -end-2 inline-flex size-7 items-center justify-center rounded-full bg-surface-900 text-white shadow hover:bg-surface-800"
+                >
+                  <X className="size-4" />
+                </button>
+                {analyzingImage ? (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 text-white text-xs">
+                    <span className="inline-block me-2 size-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                    {T.ai.photoAnalyzing}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {voice.isListening ? (
+              <p className="mt-1 flex items-center gap-2 text-xs text-danger">
+                <span className="inline-block size-2 rounded-full bg-danger animate-pulse" />
+                {voice.interim ? `"${voice.interim}"` : T.ai.voiceListening}
+              </p>
+            ) : voice.error ? (
+              <p className="mt-1 text-xs text-danger">{voiceErrorMessage(voice.error)}</p>
+            ) : null}
           </div>
           <div>
             <Label htmlFor="m-grams-hint">כמות בגרמים (אופציונלי)</Label>

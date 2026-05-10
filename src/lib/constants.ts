@@ -77,6 +77,18 @@ export const T = {
     parseFailed: "ניתוח נכשל. נסה/י לתאר אחרת או הזין/י ידנית",
     detected: "זוהה",
     manual: "הזנה ידנית",
+    voiceStart: "הזנה קולית",
+    voiceStop: "עצירת הקלטה",
+    voiceListening: "מאזין... דבר/י עכשיו",
+    voiceUnsupported: "הדפדפן אינו תומך בהזנה קולית",
+    voicePermissionDenied: "אין הרשאה לשימוש במיקרופון",
+    voiceError: "שגיאה בהזנה הקולית. נסה/י שוב",
+    photoCapture: "צילום מזון",
+    photoUpload: "העלאת תמונה",
+    photoAnalyzing: "מנתח תמונה...",
+    photoRemove: "הסרת תמונה",
+    photoError: "ניתוח התמונה נכשל. נסה/י תמונה חדה יותר",
+    photoTooLarge: "התמונה גדולה מדי",
   },
   // Intensities & types
   intensity: {
