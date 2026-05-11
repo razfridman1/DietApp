@@ -11,7 +11,6 @@ export const T = {
     goal: "יעד",
     mealIdeas: "רעיונות",
     reports: "דו״חות",
-    guide: "מדריך",
     profile: "פרופיל",
     logout: "התנתקות",
   },

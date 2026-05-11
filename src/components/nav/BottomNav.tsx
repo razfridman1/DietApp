@@ -8,7 +8,6 @@ import {
   ChefHat,
   FileText,
   HeartPulse,
-  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { T } from "@/lib/constants";
@@ -30,7 +29,6 @@ export function BottomNav() {
     goal: "Goal",
     mealIdeas: "Meals",
     reports: "Reports",
-    guide: "Guide",
   };
 
   const items: NavItem[] = [
@@ -40,7 +38,6 @@ export function BottomNav() {
     { href: "/goal", label: lang === "he" ? T.nav.goal : enLabels.goal, icon: Target },
     { href: "/meal-ideas", label: lang === "he" ? T.nav.mealIdeas : enLabels.mealIdeas, icon: ChefHat },
     { href: "/reports", label: lang === "he" ? T.nav.reports : enLabels.reports, icon: FileText },
-    { href: "/guide", label: lang === "he" ? T.nav.guide : enLabels.guide, icon: BookOpen },
   ];
 
   return (
@@ -48,7 +45,7 @@ export function BottomNav() {
       dir={isRTL ? "rtl" : "ltr"}
       className="fixed bottom-0 inset-x-0 z-40 border-t border-surface-200 bg-white/90 backdrop-blur dark:bg-surface-900/90 dark:border-surface-800"
     >
-      <ul className="mx-auto grid max-w-2xl grid-cols-7">
+      <ul className="mx-auto grid max-w-2xl grid-cols-6">
         {items.map((it) => {
           const active = pathname === it.href || pathname?.startsWith(it.href + "/");
           // Treat the legacy /weekly /monthly /insights routes as part of /analytics so the nav highlights correctly.
