@@ -1,8 +1,10 @@
 import { requireUser } from "@/lib/supabase/server";
 import { json } from "@/lib/api-helpers";
-import { lastNDates, todayISO } from "@/lib/format";
+import { datesBetween, lastNDates, todayISO } from "@/lib/format";
 import { findAnomalies, summarize } from "@/lib/calc/analytics";
 import type { DailyLog } from "@/types";
+
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(req: Request) {
   let session;
@@ -12,10 +14,23 @@ export async function GET(req: Request) {
     return r as Response;
   }
   const url = new URL(req.url);
-  const days = Math.min(31, Math.max(2, Number(url.searchParams.get("days") || 7)));
-  const end = url.searchParams.get("end") || todayISO();
-  const dates = lastNDates(days, end);
-  const start = dates[0];
+  const startParam = url.searchParams.get("start");
+  const endParam = url.searchParams.get("end") || todayISO();
+  const end = ISO_RE.test(endParam) ? endParam : todayISO();
+
+  let start: string;
+  let dates: string[];
+
+  if (startParam && ISO_RE.test(startParam) && startParam <= end) {
+    // Custom range mode — bound it to 366 days for safety.
+    const all = datesBetween(startParam, end);
+    dates = all.length > 366 ? all.slice(all.length - 366) : all;
+    start = dates[0];
+  } else {
+    const days = Math.min(31, Math.max(2, Number(url.searchParams.get("days") || 7)));
+    dates = lastNDates(days, end);
+    start = dates[0];
+  }
 
   const { user, supabase } = session;
   const { data } = await supabase

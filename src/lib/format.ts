@@ -65,3 +65,20 @@ export function lastNDates(n: number, endIso?: string): string[] {
   }
   return out;
 }
+
+/**
+ * Inclusive list of ISO dates between startIso and endIso.
+ * Returns [] if startIso is after endIso.
+ */
+export function datesBetween(startIso: string, endIso: string): string[] {
+  const start = parseISO(startIso);
+  const end = parseISO(endIso);
+  if (start.getTime() > end.getTime()) return [];
+  const out: string[] = [];
+  const cur = new Date(start);
+  while (cur.getTime() <= end.getTime()) {
+    out.push(isoDate(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
