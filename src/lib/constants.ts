@@ -36,7 +36,7 @@ export const T = {
     caloriesIn: "קלוריות נכנסו",
     caloriesOut: "קלוריות נשרפו",
     netCalories: "מאזן נטו",
-    caloriesToGoal: "קלוריות ליעד",
+    caloriesToGoal: "מקסימום קלוריות מותרות",
     caloriesToTdee: "קלוריות מצריכת קלוריות יומית",
     remaining: "נותר",
     over: "חריגה",
